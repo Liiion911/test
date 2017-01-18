@@ -1,1 +1,128 @@
-HELLO WORLD!
+<html>
+<head>
+
+<script type="text/javascript">
+  function getBodyHeight() {
+    var height, scrollHeight, offsetHeight;
+    if (document.height) {
+        height = document.height;
+    } else if (document.body) {
+        if (document.body.scrollHeight) {
+            height = scrollHeight = document.body.scrollHeight;
+        }
+        if (document.body.offsetHeight) {
+            height = offsetHeight = document.body.offsetHeight;
+        }
+        if (scrollHeight && offsetHeight) {
+            height = Math.max(scrollHeight, offsetHeight);
+        }
+    }
+    return height;
+  }
+  
+	window.addEventListener("message", function(event) {
+	  var origin = event.origin || event.originalEvent.origin;
+	  if (origin.indexOf("dzzzr.ru")) {
+		if (event.data == "getSize") {
+		  var width = 700;
+		  var height = getBodyHeight()+20;
+		  event.source.postMessage({width: width, height: height, type: "Size"}, origin);
+		} else if (event.data.type == "setCodes") {
+			var codesHTML = event.data.zad.split('<strong>Коды сложности</strong>')[1];
+			var codesHTMLBonus = codesHTML.split("бонусные коды: ")[1].split('<br>')[0];
+			var codesHTMLBonusArray = codesHTMLBonus.split(", ");
+			if(document.location.href.indexOf('?msg=') < 0) {
+				document.location.href = '?msg=' + encodeURIComponent(JSON.stringify(codesHTMLBonusArray));
+			}
+		}
+	  }
+	});
+	
+	var loadJSONP = (function(){
+	  var unique = 0;
+	  return function(url, callback, error, context) {
+		// INIT
+		var name = "_jsonp_" + unique++;
+		if (url.match(/\?/)) url += "&callback="+name;
+		else url += "?callback="+name;
+		
+		// Create script
+		var script = document.createElement('script');
+		script.type = 'text/javascript';
+		script.src = url;
+		script.onerror = error;
+		
+		// Setup handler
+		window[name] = function(data){
+		  callback.call((context || window), data);
+		  document.getElementsByTagName('head')[0].removeChild(script);
+		  script = null;
+		  delete window[name];
+		};
+		
+		// Load JSON
+		document.getElementsByTagName('head')[0].appendChild(script);
+	  };
+	})();
+	
+	var currentPings = 0;
+	var maxPings = 60;
+	var pingURL = 'localhost:3000';
+	
+	function pingJSONP () {
+		loadJSONP('http://' + pingURL + '/?ping=' + currentPings, function(data) { 
+			//console.log(data);
+			if(data.test == 1) {
+				if(currentPings >= maxPings){
+					loadJSONP('http://' + pingURL + '/?final=' + currentPings, function(data) { 
+						document.getElementsByTagName('body')[0].innerHTML = '<b>Код закрытия задания: ' + data.code + '</b>';
+					}, function() {
+						currentPings = 0;
+						document.getElementsByTagName('body')[0].innerHTML = 'Нет подключения к Wi-Fi';
+						setTimeout(function (){ pingJSONP(); }, 1000);
+					});
+				} else {
+					var percent = parseInt(((100 * currentPings)/maxPings).toFixed());
+					document.getElementsByTagName('body')[0].innerHTML = '<div id="progressbar"><div style="width:' + percent + '%"></div><span><b>' + percent + '%</b></span></div>';
+					currentPings += 1;
+					setTimeout(function (){ pingJSONP(); }, 1000);
+				}
+			}
+		}, function() {
+			currentPings = 0;
+			document.getElementsByTagName('body')[0].innerHTML = 'Нет подключения к Wi-Fi';
+			setTimeout(function (){ pingJSONP(); }, 1000);
+		});
+	}
+	
+	function onLoad() {
+		pingJSONP();
+	}
+	
+</script>
+<style>body,table {background-color:black;color:white;font-size:14px;font-family:Tahoma,Arial,Verdana;}a{color:#ffa500;} 
+#progressbar {
+  background-color: black;
+  border-radius: 13px; /* (height of inner div) / 2 + padding */
+  padding: 3px;
+  border: 1px solid white;
+}
+
+#progressbar > div {
+   background-color: orange;
+   height: 20px;
+   border-radius: 10px;
+}
+
+#progressbar > span {
+	position: absolute;
+    display: inline-block;
+    left: 50%;
+    top: 15px;
+}
+</style>
+</head>
+<body onload="onLoad();">
+
+</body>
+</html>
