@@ -13,7 +13,7 @@ app.use(session({
 app.set('port', 3000);
 app.set('ip', "0.0.0.0");
 
-var maxPings = 60;
+var maxPings = 300;
 var pingCode = '994359278';
 
 app.get('/', function (req, res) {
